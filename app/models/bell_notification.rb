@@ -69,8 +69,14 @@ class BellNotification < ActiveRecord::Base
     else
       nil
     end
+  rescue NameError => e
+    # Handle unknown notifiable_type (e.g., 'UnknownType' that doesn't exist)
+    Rails.logger.error "BellNotification: Unknown notifiable_type '#{notifiable_type}': #{e.message}"
+    nil
   rescue => e
-    Rails.logger.error "BellNotification: Failed to generate URL for #{notifiable.class}: #{e.message}"
+    # Handle other errors (e.g., routing errors, missing associations)
+    notifiable_class_name = notifiable.class.name rescue notifiable_type
+    Rails.logger.error "BellNotification: Failed to generate URL for #{notifiable_class_name}: #{e.message}"
     nil
   end
 end

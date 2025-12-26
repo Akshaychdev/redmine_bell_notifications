@@ -141,13 +141,24 @@ module RedmineBellNotifications
 
     # Extract actor (user who triggered the event)
     def extract_actor
-      if sender_id = extract_header('X-Redmine-Sender')
-        User.find_by(id: sender_id.to_i)
-      elsif @notifiable
-        # Try to infer from notifiable
-        case @notifiable
+      # Priority 1: Extract from X-Redmine-Sender header (contains login, not ID)
+      if sender_login = extract_header('X-Redmine-Sender')
+        actor = User.find_by(login: sender_login)
+        return actor if actor.present?
+      end
+
+      # Priority 2: Try to infer from notifiable
+      if @notifiable
+        actor = case @notifiable
         when Issue
-          @notifiable.author
+          # For issue updates, check if there's a recent journal by someone other than the author
+          # This happens when someone updates an issue they didn't create
+          recent_journal = @notifiable.journals.order(created_on: :desc).first
+          if recent_journal && recent_journal.user_id != @notifiable.author_id
+            recent_journal.user
+          else
+            @notifiable.author
+          end
         when Journal
           @notifiable.user
         when News
@@ -161,11 +172,15 @@ module RedmineBellNotifications
         else
           nil
         end
-      else
-        User.current
+
+        return actor if actor.present?
       end
+
+      # Priority 3: Fallback to current user (may be Anonymous in mail context)
+      User.current.presence
     rescue => e
       Rails.logger.error "BellNotifications: Failed to extract actor: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
       nil
     end
 

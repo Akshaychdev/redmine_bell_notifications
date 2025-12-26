@@ -17,9 +17,9 @@ module RedmineBellNotifications
     end
 
     # Cleanup old notifications (older than specified days)
-    # Default: 180 days (6 months)
+    # Default: 30 days (1 month)
     # Uses batch processing to avoid locking table for large deletions
-    def cleanup_old_notifications(days = 180)
+    def cleanup_old_notifications(days = 30)
       return 0 unless days.is_a?(Integer) && days > 0
 
       total_deleted = 0
