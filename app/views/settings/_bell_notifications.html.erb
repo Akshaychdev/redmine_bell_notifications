@@ -14,11 +14,11 @@
   <p>
     <label for="settings_retention_days">Retention period (days)</label>
     <%= number_field_tag 'settings[retention_days]',
-                         @settings['retention_days'] || 180,
-                         min: 30,
+                         @settings['retention_days'] || 30,
+                         min: 15,
                          max: 365,
                          class: 'small' %>
-    <em class="info">How long to keep notifications before automatic cleanup (30-365 days). Default: 180 days (6 months)</em>
+    <em class="info">How long to keep notifications before automatic cleanup (15-365 days). Default: 30 days (1 month)</em>
   </p>
 
   <p>
@@ -33,7 +33,7 @@
 
   <p class="info">
     <strong>Automatic Cleanup:</strong> The plugin automatically cleans up old notifications in the background.
-    Cleanup runs every <%= @settings['cleanup_interval'] || 24 %> hours and deletes notifications older than <%= @settings['retention_days'] || 180 %> days.
+    Cleanup runs every <%= @settings['cleanup_interval'] || 24 %> hours and deletes notifications older than <%= @settings['retention_days'] || 30 %> days.
     <strong>No cron job required!</strong>
   </p>
 

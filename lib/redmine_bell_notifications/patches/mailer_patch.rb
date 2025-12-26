@@ -5,7 +5,7 @@ module RedmineBellNotifications
 
       module ClassMethods
         # Intercept mail delivery to create bell notifications
-        def deliver_mail(mail, &block)
+        def deliver_mail(mail)
           # Always create bell notifications, regardless of email delivery settings
           # This allows bell notifications to work independently of email configuration
           begin
@@ -19,7 +19,8 @@ module RedmineBellNotifications
             Rails.logger.error e.backtrace.join("\n")
           end
 
-          # Continue with normal email delivery (may or may not happen based on settings)
+          # Continue with normal email delivery
+          # Call super without arguments to preserve original behavior and return value
           super
         end
 
