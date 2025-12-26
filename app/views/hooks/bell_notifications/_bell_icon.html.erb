@@ -1,0 +1,7 @@
+<% if User.current.logged? %>
+  <div id="bell-notifications-wrapper">
+    <a href="#" id="bell-notifications-menu" class="bell-icon-link" title="<%= l(:label_notifications) %>">
+      <span class="bell-icon-container"></span>
+    </a>
+  </div>
+<% end %>

@@ -1,30 +1,64 @@
 /* Bell Notifications Plugin - Theme-compatible Redmine styling */
 
-/* Bell icon in account menu */
+/*
+ * Bell Icon Positioning Strategy:
+ *
+ * Desktop (>899px):
+ *   - JavaScript moves icon to #quick-search div (after project jump box)
+ *   - Icon appears inline in header after project switcher
+ *   - Dropdown positioned absolutely below icon
+ *
+ * Mobile (<=899px):
+ *   - Icon stays in original DOM position (view_layouts_base_body_top hook)
+ *   - CSS uses fixed positioning next to hamburger menu
+ *   - Dropdown spans full width below fixed header (64px)
+ */
+
+/* Bell icon wrapper - base styles */
+#bell-notifications-wrapper {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Desktop: When icon is moved to quick-search by JavaScript */
+#quick-search #bell-notifications-wrapper {
+  margin-left: 15px;
+  margin-bottom: 10px;
+  vertical-align: bottom;
+}
+
+/* Bell icon link */
 #bell-notifications-menu {
   position: relative;
-  display: inline-block;
-  margin-left: 1em; /* Space after "Logged in as" */
-  margin-right: 0.5em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   text-decoration: none;
-  padding: 2px 6px;
-  order: -999; /* Force to appear first in flex layout */
-  vertical-align: middle;
+  padding: 1px;
+  vertical-align: bottom;
+  background-color: rgba(0, 0, 0, 0.03);
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 30px;
+  transition: all 0.2s ease;
 }
 
 #bell-notifications-menu:hover {
   text-decoration: none;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
-/* Bell icon container - uses mask to apply #e0e0e0 color like other menu items */
+/* Bell icon container - uses mask to apply color */
 .bell-icon-container {
   display: inline-block;
-  width: 16px;
-  height: 16px;
-  background-color: #e0e0e0; /* Same color as Log time, My account, etc. */
+  width: 25px;
+  height: 25px;
+  background-color: #fff; /* Professional gray color */
   -webkit-mask-image: url('../images/bell.svg');
   mask-image: url('../images/bell.svg');
   -webkit-mask-size: contain;
@@ -33,33 +67,34 @@
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
-  vertical-align: text-top;
-  opacity: 1;
+  vertical-align: bottom;
+  opacity: 0.85;
 }
 
 #bell-notifications-menu:hover .bell-icon-container {
-  background-color: #fff; /* Slightly brighter on hover, like other links */
+  background-color: #b3b3b3;
+  opacity: 1;
 }
 
 /* Unread badge - professional notification badge style */
 .unread-badge {
   position: absolute;
-  top: -3px;
-  right: -4px;
-  background-color: #5a6c7d; /* Professional grey/slate background */
+  top: -2px;
+  right: -2px;
+  background-color: #e74c3c; /* Professional red */
   color: #fff;
-  border-radius: 6px;
-  padding: 0px 3px;
-  font-size: 8px;
-  font-weight: bold;
-  min-width: 12px;
-  height: 12px;
+  border-radius: 7px;
+  padding: 2px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  min-width: 14px;
+  height: 14px;
   text-align: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   pointer-events: none; /* Allow clicks to pass through to bell icon */
   opacity: 1; /* Fully solid */
 }
@@ -74,7 +109,7 @@
   background: #f5f7f9;
   border: 1px solid #ccc;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 9999;
   overflow: hidden;
   font-family: var(--fonts-main, Verdana, sans-serif);
@@ -102,7 +137,7 @@
 .bell-dropdown-header a {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #169;  /* Redmine's link color */
+  color: #169; /* Redmine's link color */
   text-decoration: none;
   padding: 3px 8px;
   border-radius: 3px;
@@ -372,20 +407,114 @@
   font-size: 0.875rem;
 }
 
-/* Mobile responsive */
-@media screen and (max-width: 768px) {
+/* Mobile responsive - follows Redmine's mobile layout pattern (breakpoint: 899px) */
+@media screen and (max-width: 899px) {
+  /*
+   * Mobile/Tablet: Fixed positioning in Redmine's mobile header
+   *
+   * Redmine's mobile header specs:
+   *   - position: fixed
+   *   - z-index: 9999
+   *   - height: 64px
+   *   - background: #628db6
+   *
+   * Mobile toggle button (hamburger):
+   *   - float: right
+   *   - width: 60px
+   *   - border-left separator
+   *
+   * Bell icon positioning:
+   *   - Fixed at top-right, left of hamburger menu
+   *   - Matches hamburger menu styling (border separator)
+   *   - White icon on blue header background
+   */
+  #bell-notifications-wrapper {
+    position: fixed;
+    top: 0;
+    right: 60px; /* Left of hamburger menu (60px wide) */
+    margin: 0;
+    z-index: 10000; /* Above header (9999) for proper layering */
+    height: 64px; /* Match Redmine's mobile header height */
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.2); /* Visual separator like hamburger */
+  }
+
+  #bell-notifications-menu {
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  }
+
+  #bell-notifications-menu:hover,
+  #bell-notifications-menu:active {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .bell-icon-container {
+    width: 22px;
+    height: 22px;
+    background-color: #fff; /* White icon for dark header */
+  }
+
+  .unread-badge {
+    top: 0px;
+    right: 0px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 10px;
+    padding: 2px 4px;
+    font-weight: 700;
+  }
+
+  /* Mobile dropdown: full-width below header */
   .bell-notifications-dropdown {
-    width: calc(100vw - 40px);
-    right: 10px;
-    max-width: 460px;
+    position: fixed;
+    top: 64px; /* Below fixed header */
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 64px); /* Full height minus header */
+    border-radius: 0; /* No rounded corners on mobile */
+    border-left: none;
+    border-right: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Adjust notification list height for mobile */
+  .bell-notifications-list {
+    max-height: calc(100vh - 120px); /* Account for header + dropdown header */
   }
 }
 
 @media screen and (max-width: 480px) {
-  .bell-notifications-dropdown {
-    width: calc(100vw - 20px);
-    right: 10px;
-    left: 10px;
+  /* Small mobile: Slightly smaller icon */
+  #bell-notifications-wrapper {
+    padding: 0 8px;
+  }
+
+  #bell-notifications-menu {
+    padding: 6px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .bell-icon-container {
+    width: 20px;
+    height: 20px;
+  }
+
+  .unread-badge {
+    top: 0px;
+    right: 0px;
+    min-width: 14px;
+    height: 14px;
+    font-size: 9px;
+    padding: 2px 3px;
   }
 }
 

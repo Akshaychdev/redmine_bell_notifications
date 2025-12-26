@@ -8,6 +8,7 @@
     failureCount: 0, // Track consecutive failures
     maxFailures: 3, // Stop polling after this many failures
     backoffMultiplier: 1, // Exponential backoff multiplier
+    resizeListenerAdded: false, // Flag to prevent duplicate resize listeners
 
     init: function() {
       var self = this;
@@ -23,9 +24,66 @@
     },
 
     start: function() {
+      this.positionBellIcon();
+      this.setupResizeListener();
       this.updateUnreadCount();
       this.startPolling();
       this.bindEvents();
+    },
+
+    positionBellIcon: function() {
+      // Position bell icon based on screen size using Redmine's 899px breakpoint
+      //
+      // Desktop (>899px):
+      //   - Moves icon to #quick-search div (after project jump box)
+      //   - Icon appears inline after project switcher in header
+      //   - Dropdown positioned absolutely below the icon
+      //
+      // Mobile (<=899px):
+      //   - Keeps icon in original DOM position (view_layouts_base_body_top hook)
+      //   - CSS applies fixed positioning next to hamburger menu
+      //   - Dropdown spans full width below fixed header
+
+      var bellWrapper = document.getElementById('bell-notifications-wrapper');
+      if (!bellWrapper) {
+        console.warn('BellNotifications: Could not find bell wrapper');
+        return;
+      }
+
+      // Check if we're on mobile (same breakpoint as Redmine's responsive.css)
+      var isMobile = window.innerWidth <= 899;
+
+      if (isMobile) {
+        // Mobile: Keep wrapper in its original DOM position
+        // CSS (media query) handles fixed positioning at top-right next to hamburger menu
+      } else {
+        // Desktop: Move to quick-search area in header
+        var quickSearch = document.getElementById('quick-search');
+        if (quickSearch) {
+          // Append bell icon after the project jump box in quick-search
+          quickSearch.appendChild(bellWrapper);
+        } else {
+          console.warn('BellNotifications: Could not find quick-search element');
+        }
+      }
+    },
+
+    setupResizeListener: function() {
+      // Set up resize listener only once to prevent memory leaks
+      if (this.resizeListenerAdded) {
+        return;
+      }
+
+      var self = this;
+      var resizeTimer;
+      window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+          self.positionBellIcon();
+        }, 250);
+      });
+
+      this.resizeListenerAdded = true;
     },
 
     updateUnreadCount: function() {
@@ -63,10 +121,9 @@
         console.error('BellNotifications: Too many consecutive failures (' + this.failureCount + '), stopping polling');
         this.stopPolling();
 
-        // Optionally retry after a longer delay (5 minutes)
+        // Retry after a longer delay (5 minutes)
         var self = this;
         setTimeout(function() {
-          console.log('BellNotifications: Retrying after extended pause...');
           self.failureCount = 0;
           self.backoffMultiplier = 1;
           self.startPolling();
@@ -74,7 +131,6 @@
       } else {
         // Exponential backoff
         this.backoffMultiplier = Math.pow(2, this.failureCount - 1);
-        console.warn('BellNotifications: Failure ' + this.failureCount + ' of ' + this.maxFailures + ', backing off');
       }
     },
 
@@ -111,11 +167,6 @@
       }
 
       this.pollingIntervalId = setInterval(function() {
-        // Apply exponential backoff if there were failures
-        var delay = self.pollInterval * self.backoffMultiplier;
-        if (self.backoffMultiplier > 1) {
-          console.log('BellNotifications: Polling with backoff (' + delay + 'ms)');
-        }
         self.updateUnreadCount();
       }, this.pollInterval);
     },
@@ -124,7 +175,6 @@
       if (this.pollingIntervalId) {
         clearInterval(this.pollingIntervalId);
         this.pollingIntervalId = null;
-        console.log('BellNotifications: Polling stopped');
       }
     },
 
@@ -447,8 +497,6 @@
           // Insert after the bell icon
           menu.parentNode.insertBefore(container, menu.nextSibling);
           self.dropdownOpen = true;
-
-          console.log('BellNotifications: Dropdown opened');
         } else {
           console.error('BellNotifications: Could not find bell menu element');
         }
@@ -470,7 +518,6 @@
         }
       }
       this.dropdownOpen = false;
-      console.log('BellNotifications: Dropdown closed');
     },
 
     getCSRFToken: function() {
