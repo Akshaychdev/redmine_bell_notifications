@@ -58,7 +58,7 @@
   display: inline-block;
   width: 25px;
   height: 25px;
-  background-color: #fff; /* Professional gray color */
+  background-color: #fff; /* White icon color */
   -webkit-mask-image: url('../images/bell.svg');
   mask-image: url('../images/bell.svg');
   -webkit-mask-size: contain;
