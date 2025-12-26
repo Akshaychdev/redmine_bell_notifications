@@ -46,7 +46,7 @@ Or download and extract to `plugins/redmine_bell_notifications/`
 cd /path/to/redmine
 
 bundle install && \
-bundle exec rake rake redmine:plugins:migrate RAILS_ENV=production
+bundle exec rake redmine:plugins:migrate RAILS_ENV=production
 ```
 
 ### 3. Restart Redmine
