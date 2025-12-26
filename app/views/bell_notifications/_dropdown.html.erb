@@ -1,0 +1,44 @@
+<div class="bell-notifications-dropdown drdn-content" id="bell-notifications-dropdown">
+  <div class="bell-dropdown-header">
+    <h4><%= l(:label_notifications) %></h4>
+    <% if @unread_notifications.any? %>
+      <%= link_to l(:label_mark_all_read),
+                  bell_notifications_mark_all_read_path,
+                  method: :put,
+                  id: 'bell-mark-all-read',
+                  remote: true %>
+    <% end %>
+  </div>
+
+  <div class="bell-notifications-list drdn-items">
+    <!-- Unread Section -->
+    <% if @unread_notifications.any? %>
+      <div class="bell-section-header">
+        <h5><%= l(:label_unread_notifications) %> (<span id="bell-unread-count"><%= @unread_notifications.count %></span>)</h5>
+      </div>
+      <div class="bell-section-content" id="bell-unread-section">
+        <%= render partial: 'bell_notifications/notification', collection: @unread_notifications %>
+      </div>
+    <% end %>
+
+    <!-- Read Section (Collapsible) -->
+    <% if @read_notifications.any? %>
+      <div class="bell-section-header bell-section-collapsible bell-section-collapsed-state" id="bell-read-toggle">
+        <h5>
+          <span class="bell-collapse-icon"></span>
+          <%= l(:label_read_notifications) %> (<%= @read_notifications.count %>)
+        </h5>
+      </div>
+      <div class="bell-section-content bell-section-collapsed" id="bell-read-section">
+        <%= render partial: 'bell_notifications/notification', collection: @read_notifications %>
+      </div>
+    <% end %>
+
+    <!-- No notifications message -->
+    <% if @unread_notifications.empty? && @read_notifications.empty? %>
+      <div class="bell-no-notifications">
+        <p><%= l(:label_no_notifications) %></p>
+      </div>
+    <% end %>
+  </div>
+</div>

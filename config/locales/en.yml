@@ -1,0 +1,15 @@
+en:
+  label_notifications: "Notifications"
+  label_no_notifications: "No notifications"
+  label_mark_all_read: "Mark all as read"
+  label_mark_as_read: "Mark as read"
+  label_unread_notifications: "Unread"
+  label_read_notifications: "Read"
+  label_bell_notifications: "Bell Notifications"
+  label_bell_notifications_enabled: "Enable in-app notifications"
+  label_time_ago: "%{time} ago"
+
+  field_bell_notifications_retention_days: "Notification retention (days)"
+
+  text_bell_notifications_cleanup: "Automatically deletes notifications older than the specified number of days"
+  text_bell_notifications_settings: "Configure bell notification settings"

@@ -1,0 +1,49 @@
+<div class="box tabular settings">
+  <h3>Bell Notifications Settings</h3>
+
+  <p>
+    <label for="settings_dropdown_limit">Notifications in dropdown</label>
+    <%= number_field_tag 'settings[dropdown_limit]',
+                         @settings['dropdown_limit'] || 10,
+                         min: 5,
+                         max: 50,
+                         class: 'small' %>
+    <em class="info">Number of notifications to display in the dropdown (5-50). Default: 10</em>
+  </p>
+
+  <p>
+    <label for="settings_retention_days">Retention period (days)</label>
+    <%= number_field_tag 'settings[retention_days]',
+                         @settings['retention_days'] || 180,
+                         min: 30,
+                         max: 365,
+                         class: 'small' %>
+    <em class="info">How long to keep notifications before automatic cleanup (30-365 days). Default: 180 days (6 months)</em>
+  </p>
+
+  <p>
+    <label for="settings_cleanup_interval">Cleanup interval (hours)</label>
+    <%= number_field_tag 'settings[cleanup_interval]',
+                         @settings['cleanup_interval'] || 24,
+                         min: 1,
+                         max: 168,
+                         class: 'small' %>
+    <em class="info">How often to run automatic cleanup (1-168 hours). Default: 24 hours (once per day)</em>
+  </p>
+
+  <p class="info">
+    <strong>Automatic Cleanup:</strong> The plugin automatically cleans up old notifications in the background.
+    Cleanup runs every <%= @settings['cleanup_interval'] || 24 %> hours and deletes notifications older than <%= @settings['retention_days'] || 180 %> days.
+    <strong>No cron job required!</strong>
+  </p>
+
+  <p class="info">
+    <strong>Note:</strong> Bell notifications work independently of email settings.
+    Even if email delivery is disabled, in-app notifications will still be created.
+  </p>
+
+  <p class="info">
+    <strong>Manual Cleanup:</strong> You can also manually run <code>rake redmine:bell_notifications:cleanup RAILS_ENV=production</code>
+    to trigger cleanup immediately.
+  </p>
+</div>

@@ -1,0 +1,32 @@
+<div class="bell-notification <%= 'unread' unless notification.read? %>"
+     data-notification-id="<%= notification.id %>"
+     data-url="<%= notification.notification_url || '#' %>">
+
+  <div class="notification-content">
+    <div class="bell-notification-title">
+      <%= notification.title %>
+    </div>
+
+    <% if notification.body.present? %>
+      <div class="bell-notification-body">
+        <%= truncate(notification.body, length: 100) %>
+      </div>
+    <% end %>
+
+    <div class="bell-notification-meta">
+      <% if notification.actor %>
+        <%= avatar(notification.actor, size: 16) %>
+        <span class="actor-name"><%= notification.actor.name %></span>
+        <span class="separator">&middot;</span>
+      <% end %>
+      <span class="time-ago"><%= l(:label_time_ago, time: time_ago_in_words(notification.created_at)) %></span>
+    </div>
+  </div>
+
+  <button class="bell-notification-mark-read"
+          data-notification-id="<%= notification.id %>"
+          title="<%= l(:label_mark_as_read) %>"
+          aria-label="<%= l(:label_mark_as_read) %>">
+    ×
+  </button>
+</div>
