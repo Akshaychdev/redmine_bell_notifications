@@ -93,17 +93,36 @@ class BellNotificationsControllerTest < Redmine::ControllerTest
 
   def test_concurrent_mark_as_read_should_be_safe
     notification = BellNotification.find(1)
+    exceptions = []
+    results = []
 
     # Simulate concurrent requests
     threads = 3.times.map do
       Thread.new do
-        notification.mark_as_read!
+        begin
+          # Reload in each thread to simulate separate requests
+          n = BellNotification.find(notification.id)
+          result = n.mark_as_read!
+          results << result
+        rescue StandardError => e
+          exceptions << e
+        end
       end
     end
 
     threads.each(&:join)
 
+    # Verify no exceptions occurred
+    assert_equal 0, exceptions.length, "Expected no exceptions, but got: #{exceptions.map(&:message).join(', ')}"
+
+    # Verify the final state
     notification.reload
-    assert_not_nil notification.read_at
+    assert_not_nil notification.read_at, "Notification should be marked as read"
+
+    # Verify read_at is a valid timestamp
+    assert_instance_of ActiveSupport::TimeWithZone, notification.read_at
+
+    # Verify the notification is in read state
+    assert notification.read?, "Notification should be in read state"
   end
 end

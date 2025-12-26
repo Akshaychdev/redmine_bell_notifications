@@ -61,6 +61,13 @@ class BellNotification < ActiveRecord::Base
   # @return [String, nil] URL path to the notifiable object, or nil if unavailable
   def notification_url
     return url if url.present?
-    RedmineBellNotifications::UrlGenerator.generate_for(notifiable)
+
+    begin
+      RedmineBellNotifications::UrlGenerator.generate_for(notifiable)
+    rescue NameError => e
+      # Handle case where notifiable_type is invalid (e.g., 'UnknownType')
+      Rails.logger.warn("Invalid notifiable_type '#{notifiable_type}' for notification #{id}: #{e.message}")
+      nil
+    end
   end
 end
