@@ -410,7 +410,7 @@ flowchart TD
 
 ```bash
 cd /path/to/redmine
-bundle exec rake redmine:plugins NAME=redmine_bell_notifications VERSION=0 RAILS_ENV=production
+bundle exec rake redmine:plugins:migrate NAME=redmine_bell_notifications VERSION=0 RAILS_ENV=production
 ```
 
 ### 2. Remove Plugin Directory
