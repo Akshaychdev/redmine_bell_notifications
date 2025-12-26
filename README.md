@@ -1,29 +1,31 @@
-# Redmine Bell Notifications
+# 🔔 Redmine Bell Notifications
 
 An in-app notification system for Redmine 6+ that adds a bell icon to the header with a dropdown showing recent notifications. Notifications follow the same rules and preferences as email notifications.
+
+The plugin intercepts Redmine's email notification system and creates in-app bell notifications from the same events that trigger emails. This means notifications work independently of email delivery - even if SMTP is not configured, you'll still get in-app notifications for issues, updates, comments, @mentions, and more.
 
 ## Features
 
 - **Bell icon** in the header with unread count badge
 - **Dropdown** showing latest unread notifications (configurable: 5-50)
 - **Auto-updates** badge count every 60 seconds
-- **Click notification** to navigate to the issue/object and mark as read
-- **Mark all as read** functionality
+- **Click notification** to navigate to the issue/object and mark as read or **Mark all as read**
 - **Follows email notification preferences** - respects user's notification settings
-- **Fully theme-compatible** - uses Redmine's native CSS classes and color scheme
-  - Works seamlessly with all Redmine themes (classic, alternate, PurpleMine, etc.)
-  - Automatically adapts to theme changes
-  - No custom colors that clash with themes
-- **Independent of email configuration** - works even when email is disabled
-- **Automatic data management** - configurable retention period (30-365 days)
+- **Popular theme-compatible** - uses Redmine's native CSS classes and color scheme, (tested with themes classic, alternate, PurpleMine, etc.)
+- **Automatic data management** - configurable retention period (15-365 days), notification data retention in database.
 - **Mobile-responsive** design
 
-## Requirements
+> **⚠️ IMPORTANT: This plugin is entirely developed using AI tools including GitHub Copilot and Claude. Please review the code and test thoroughly before using in production.**
 
-- Redmine 6.0 or higher
-- PostgreSQL, MySQL, or SQLite database
-- Ruby 3.0 or higher
-- Rails 6.1 or higher
+<div style="display: flex; gap: 10px;">
+  <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+    <img src="images/README/dsk_bell_icon.png" alt="Desktop Bell Icon" style="width: 100%;">
+    <img src="images/README/dsk_expanded.png" alt="Desktop Expanded" style="width: 100%;">
+  </div>
+  <div style="flex: 1;">
+    <img src="images/README/mobile_expanded.png" alt="Mobile Expanded" style="width: 100%; height: 100%; object-fit: cover;">
+  </div>
+</div>
 
 ## Installation
 
@@ -31,38 +33,20 @@ An in-app notification system for Redmine 6+ that adds a bell icon to the header
 
 ### 1. Install the Plugin
 
-**For standard Redmine installation:**
-
 ```bash
 cd /path/to/redmine/plugins
-git clone https://github.com/linways/redmine_bell_notifications.git
+git clone https://github.com/Akshaychdev/redmine_bell_notifications
 ```
 
 Or download and extract to `plugins/redmine_bell_notifications/`
 
-**For Docker deployment:**
-
-```bash
-# Copy plugin to container (ensure directory is named redmine_bell_notifications)
-docker cp /path/to/redmine_bell_notifications <container_name>:/usr/src/redmine/plugins/redmine_bell_notifications
-
-# Fix permissions
-docker exec <container_name> chown -R redmine:redmine /usr/src/redmine/plugins/redmine_bell_notifications
-```
-
 ### 2. Run Database Migration
-
-**For standard installation:**
 
 ```bash
 cd /path/to/redmine
-rake redmine:plugins:migrate RAILS_ENV=production
-```
 
-**For Docker deployment:**
-
-```bash
-docker exec <container_name> bundle exec rake redmine:plugins:migrate RAILS_ENV=production
+bundle install && \
+bundle exec rake rake redmine:plugins:migrate RAILS_ENV=production
 ```
 
 ### 3. Restart Redmine
@@ -80,34 +64,26 @@ docker restart <container_name>
 
 ### 4. Configure Settings (Optional)
 
-The plugin includes automatic cleanup - no cron job needed! You can configure:
+Automatic cleanup and dropdown limit can be configured:
 
-- **Dropdown limit**: Number of notifications to show (5-50)
-- **Retention period**: How long to keep notifications (30-365 days)
-- **Cleanup interval**: How often to run cleanup (1-168 hours)
+- **Dropdown limit**: Number of notifications to show (5-50), default 10 (max 10 unread and 10 read)
+- **Retention period**: How long to keep notifications (15-365 days), default 30 days
+- **Cleanup interval**: How often to run cleanup (1-168 hours), default 24 hours
 
 Access settings at: **Administration > Plugins > Redmine Bell Notifications > Configure**
 
 ## Usage
 
-### For Users
+Once installed, logged-in users will see a bell icon (🔔) in the header:
 
-Once installed, logged-in users will see a bell icon (🔔) in the header next to "My account".
+- **Desktop**: After the project switcher in the header
+- **Mobile**: Next to the hamburger menu (☰) in the top-right corner
 
-**To view notifications:**
-
-1. Click the bell icon
-2. A dropdown appears showing your latest unread notifications
-3. Click any notification to navigate to the issue/object (marks as read automatically)
-4. Click "Mark all as read" to clear all unread notifications
+Click any notification to navigate to the issue/object (marks as read automatically), Click "Mark all as read" to move all notifications to read.
 
 **Notification Badge:**
 
-- Shows the count of unread notifications
-- Updates automatically every 60 seconds
-- Displays "99+" if you have more than 99 unread notifications
-
-### For Administrators
+Shows the count of unread notifications, updates every 60 seconds, displays "99+" if you have more than 99 unread notifications
 
 **Notification Rules:**
 
@@ -125,51 +101,22 @@ Once installed, logged-in users will see a bell icon (🔔) in the header next t
 
 **Data Management:**
 
-- The plugin **automatically cleans up old notifications** - no cron job required!
-- Cleanup runs in the background based on your configured interval (default: every 24 hours)
+- The plugin **automatically cleans up old notifications** based on your configured interval (default: every 24 hours)
 - Deletes notifications older than the retention period (default: 180 days)
-- Runs in a separate thread to avoid affecting performance
 - Manual cleanup is also available:
 
   ```bash
   rake redmine:bell_notifications:cleanup RAILS_ENV=production
+
+  # Delete notifications older than 90 days
+  DAYS=90 rake redmine:bell_notifications:cleanup RAILS_ENV=production
   ```
 
-**Statistics:**
-View notification statistics:
+- View notification statistics:
 
-```bash
-rake redmine:bell_notifications:stats RAILS_ENV=production
-```
-
-## Configuration
-
-The plugin can be configured from **Administration > Plugins > Redmine Bell Notifications > Configure**.
-
-### Available Settings
-
-**Notifications in dropdown** (default: 10)
-- Number of notifications to display in the dropdown menu
-- Range: 5-50 notifications
-- Higher values may affect performance for users with many notifications
-
-**Retention period** (default: 180 days)
-- How long to keep notifications before automatic cleanup
-- Range: 30-365 days
-- Shorter retention periods reduce database size
-
-**Cleanup interval** (default: 24 hours)
-- How often the automatic cleanup runs
-- Range: 1-168 hours (1 hour to 1 week)
-- More frequent cleanup keeps database smaller but uses more resources
-
-### Important Notes
-
-- **Bell notifications work independently of email settings** - Notifications are created even when email delivery is disabled or not configured
-- Users with email notification preference set to "none" will still NOT receive bell notifications (respects user privacy preferences)
-- Changes to settings take effect immediately
-
-## Architecture
+  ```bash
+  rake redmine:bell_notifications:stats RAILS_ENV=production
+  ```
 
 ### How It Works
 
@@ -186,73 +133,248 @@ The plugin can be configured from **Administration > Plugins > Redmine Bell Noti
    - Mail headers identify the related issue/object
    - Recipients determine who gets notifications
 
-### Database Schema
+```mermaid
+graph TD
+    A[User Action in Redmine] -->|Creates/Updates Issue, etc.| B[Redmine Mailer]
+    B -->|Prepares Email| C[Mailer.deliver_mail]
+    C -->|Intercepted by| D[MailerPatch]
 
-Table: `bell_notifications`
+    D -->|Extracts Data| E[NotificationBuilder]
+    E -->|Creates Record| F[BellNotification DB]
 
-- `user_id` - Recipient of the notification
-- `notifiable_id`, `notifiable_type` - Polymorphic reference to Issue, Journal, News, etc.
-- `event_type` - Type of event (issue_added, issue_updated, etc.)
-- `actor_id` - User who triggered the event
-- `title` - Notification title (email subject)
-- `body` - Preview text (first 500 chars of email)
-- `url` - Deep link to the object
-- `read_at` - When marked as read (NULL = unread)
-- `created_at`, `updated_at` - Timestamps
+    D -->|Triggers| G[Auto Cleanup Check]
+    G -->|If Due| H[Background Cleanup]
+    H -->|Deletes Old Records| F
 
-**Indices:**
+    D -->|Continues| I[Email Delivery]
+    I -->|If Configured| J[SMTP Server]
 
-- `(user_id, read_at, created_at)` - Fast unread queries
-- `(notifiable_type, notifiable_id)` - Polymorphic lookups
-- `created_at` - Cleanup queries
+    F -->|Polled Every 60s| K[JavaScript Update]
+    K -->|AJAX Request| L[unread_count API]
+    L -->|Returns Count| M[Badge Update]
 
-## Maintenance
+    N[User Clicks Bell] -->|AJAX| O[dropdown API]
+    O -->|Queries| F
+    O -->|Returns| P[Dropdown HTML]
 
-### Automatic Cleanup (Built-in)
+    Q[User Clicks Notification] -->|AJAX| R[mark_read API]
+    R -->|Updates| F
+    R -->|Redirects to| S[Issue/Object URL]
 
-The plugin automatically cleans up old notifications **without requiring a cron job**:
-
-- **Runs automatically** in the background when notifications are created
-- **Configurable interval** - set how often cleanup runs (default: 24 hours)
-- **Configurable retention** - set how long to keep notifications (default: 180 days)
-- **Non-blocking** - runs in a separate thread, doesn't affect performance
-- **Efficient** - uses database indices for fast deletion
-
-**How it works:**
-1. Every time a notification is created, the plugin checks if cleanup is due
-2. If the cleanup interval has passed, it triggers cleanup in a background thread
-3. Old notifications are deleted based on the retention period
-4. The cleanup timestamp is updated in Rails cache
-
-### Manual Cleanup (Optional)
-
-You can also manually trigger cleanup:
-
-```bash
-rake redmine:bell_notifications:cleanup RAILS_ENV=production
+    style F fill:#e1f5ff
+    style D fill:#ffe1e1
+    style G fill:#e1ffe1
+    style K fill:#fff4e1
 ```
 
-**Custom retention period:**
+#### 2. Mailer Interception & Notification Creation
 
-```bash
-# Delete notifications older than 90 days
-DAYS=90 rake redmine:bell_notifications:cleanup RAILS_ENV=production
+Detailed flow of how emails are intercepted and converted to bell notifications:
+
+```mermaid
+sequenceDiagram
+    participant U as User Action
+    participant R as Redmine Core
+    participant M as Mailer
+    participant P as MailerPatch
+    participant B as NotificationBuilder
+    participant DB as Database
+    participant S as Settings
+    participant C as Cleanup
+
+    U->>R: Create/Update Issue
+    R->>M: Trigger notification email
+    M->>P: deliver_mail(mail)
+
+    Note over P: Interception Point
+
+    P->>B: new(mail)
+    B->>B: Extract subject → title
+    B->>B: Extract body → preview
+    B->>B: Parse X-Redmine-* headers
+    B->>B: Identify notifiable (Issue/Journal/etc)
+    B->>B: Identify actor (sender)
+    B->>B: Generate URL
+
+    P->>P: Get recipients (to, cc, bcc)
+
+    loop For each recipient
+        P->>P: Find user by email
+        P->>P: Check user.mail_notification != 'none'
+        P->>B: create_notification_for(user)
+        B->>DB: INSERT bell_notification
+    end
+
+    P->>C: auto_cleanup
+    C->>S: Get retention_days & cleanup_interval
+    C->>C: Check if cleanup due
+
+    alt Cleanup Due
+        C->>DB: DELETE old notifications
+        C->>C: Update last_cleanup_time
+    end
+
+    P->>M: super (continue email delivery)
+    M-->>SMTP: Send email (if configured)
 ```
 
-**Note:** Manual cleanup is optional - the plugin handles cleanup automatically!
+#### 3. Database Schema & Relationships
 
-### View Statistics
+Visual representation of the `bell_notifications` table and its relationships:
 
-```bash
-rake redmine:bell_notifications:stats RAILS_ENV=production
+```mermaid
+erDiagram
+    bell_notifications {
+        bigint id PK
+        bigint user_id FK "Recipient"
+        bigint notifiable_id "Polymorphic ID"
+        string notifiable_type "Issue, Journal, News, etc"
+        string event_type "issue_added, issue_updated, etc"
+        bigint actor_id FK "User who triggered event"
+        string title "Email subject (max 255)"
+        text body "Preview text (max 500)"
+        string url "Deep link to object"
+        datetime read_at "NULL = unread"
+        datetime created_at
+        datetime updated_at
+    }
+
+    users {
+        bigint id PK
+        string login
+        string mail
+        string mail_notification "Notification preference"
+    }
+
+    issues {
+        bigint id PK
+        string subject
+        bigint author_id
+    }
+
+    journals {
+        bigint id PK
+        bigint journalized_id
+        string journalized_type
+        bigint user_id
+    }
+
+    bell_notifications }o--|| users : "user_id (recipient)"
+    bell_notifications }o--o| users : "actor_id (who triggered)"
+    bell_notifications }o--o| issues : "notifiable (polymorphic)"
+    bell_notifications }o--o| journals : "notifiable (polymorphic)"
+
+    %% Indices
+    bell_notifications ||--o{ idx_user_read_created : "(user_id, read_at, created_at)"
+    bell_notifications ||--o{ idx_notifiable : "(notifiable_type, notifiable_id)"
+    bell_notifications ||--o{ idx_created : "created_at"
+    bell_notifications ||--o{ idx_actor : "actor_id"
 ```
 
-Shows:
+**Key Indices:**
 
-- Total notification count
-- Read vs unread count
-- Oldest and newest notifications
-- Top 5 users by notification count
+1. **`(user_id, read_at, created_at)`** - Composite index for fast unread queries
+2. **`(notifiable_type, notifiable_id)`** - Polymorphic lookups
+3. **`created_at`** - Cleanup queries (deleting old records)
+4. **`actor_id`** - Foreign key with ON DELETE SET NULL
+
+#### 4. Dropdown Population & User Interaction
+
+Frontend JavaScript flow for displaying and interacting with notifications:
+
+```mermaid
+sequenceDiagram
+    participant Page as Page Load
+    participant JS as JavaScript
+    participant API as API Endpoints
+    participant DB as Database
+    participant UI as User Interface
+
+    Page->>JS: Document ready
+    JS->>JS: Initialize bell icon
+    JS->>JS: startPolling()
+
+    loop Every 60 seconds
+        JS->>API: GET /bell_notifications/unread_count
+        API->>DB: SELECT COUNT(*) WHERE user_id=X AND read_at IS NULL
+        DB-->>API: count: 5
+        API-->>JS: {count: 5}
+        JS->>UI: Update badge (show "5")
+    end
+
+    Note over UI: User clicks bell icon
+
+    UI->>JS: Click event
+    JS->>API: GET /bell_notifications/dropdown
+    API->>DB: SELECT * WHERE user_id=X AND read_at IS NULL<br/>LIMIT 10 ORDER BY created_at DESC
+    DB-->>API: notifications array
+    API-->>JS: HTML partial
+    JS->>UI: Show dropdown with notifications
+
+    Note over UI: User clicks notification
+
+    UI->>JS: Click notification
+    JS->>API: PUT /bell_notifications/:id/mark_read
+    API->>DB: UPDATE bell_notifications<br/>SET read_at = NOW() WHERE id=:id
+    DB-->>API: Success
+    API-->>JS: {success: true, url: "/issues/123"}
+    JS->>UI: Navigate to URL
+    JS->>JS: updateUnreadCount()
+
+    Note over UI: User clicks "Mark all as read"
+
+    UI->>JS: Click mark all
+    JS->>API: PUT /bell_notifications/mark_all_read
+    API->>DB: UPDATE bell_notifications<br/>SET read_at = NOW()<br/>WHERE user_id=X AND read_at IS NULL
+    DB-->>API: Success
+    API-->>JS: {success: true}
+    JS->>UI: Hide badge, clear dropdown
+```
+
+#### 5. Automatic Cleanup Mechanism
+
+**Cleanup Flow Details:**
+
+1. **Trigger**: Every notification creation checks if cleanup is due
+2. **Cache Check**: Reads `bell_notifications_last_cleanup` timestamp from Rails cache
+3. **Settings**: Gets `retention_days` (15-365) and `cleanup_interval` (1-168 hours) from plugin settings
+4. **Background Execution**: Uses `Rails.application.executor.wrap` for thread-safe background processing
+5. **Batch Processing**: Deletes 1000 records at a time to avoid long-running locks
+6. **Performance**: Uses `created_at` index for fast queries, sleeps between batches
+7. **Completion**: Updates cache timestamp to prevent duplicate runsages old notifications without cron jobs:
+
+```mermaid
+flowchart TD
+    A[Notification Created] -->|Triggers| B{Cleanup Due?}
+
+    B -->|Check| C[Get Last Cleanup Time<br/>from Rails Cache]
+    C --> D[Get Cleanup Interval<br/>from Settings]
+    D --> E{Last Cleanup ><br/>Interval Hours Ago?}
+
+    E -->|No| F[Skip Cleanup]
+    E -->|Yes| G[Trigger Auto Cleanup]
+
+    G --> H[Get Retention Days<br/>from Settings]
+    H --> I[Start Background Thread<br/>Rails.application.executor.wrap]
+
+    I --> J[Query: SELECT id<br/>WHERE created_at < retention_days.ago<br/>LIMIT 1000]
+
+    J --> K{Records Found?}
+    K -->|Yes| L[DELETE batch<br/>Using created_at index]
+    L --> M[Sleep 0.1s<br/>to avoid locking]
+    M --> J
+
+    K -->|No| N[Update Last Cleanup Time<br/>in Rails Cache]
+    N --> O[Log: Deleted X notifications]
+
+    F --> P[Continue Normal Flow]
+    O --> P
+
+    style B fill:#fff4e1
+    style G fill:#e1ffe1
+    style I fill:#ffe1e1
+    style L fill:#e1f5ff
+```
 
 ## Troubleshooting
 
@@ -266,11 +388,10 @@ Shows:
 
 ### Notifications not appearing
 
-1. Bell notifications work independently of email - they're created even when email is disabled
-2. Verify user's email notification setting is NOT set to "none" (respects user privacy)
-3. Check Rails logs: `tail -f log/production.log`
-4. Look for errors in the BellNotifications namespace
-5. Verify the plugin migration has been run: `rake redmine:plugins:migrate RAILS_ENV=production`
+1. Verify user's email notification setting is NOT set to "none" (respects user privacy)
+2. Check Rails logs: `tail -f log/production.log`
+3. Look for errors in the BellNotifications namespace
+4. Verify the plugin migration has been run: `rake redmine:plugins:migrate RAILS_ENV=production`
 
 ### Dropdown not opening
 
@@ -281,21 +402,15 @@ Shows:
 ### Performance issues
 
 1. Run cleanup task to reduce table size
-2. Check database indices are created:
+2. Consider reducing retention period if table is very large
 
-   ```sql
-   SHOW INDEX FROM bell_notifications;
-   ```
-
-3. Consider reducing retention period if table is very large
-
-## Uninstallation
+## Uninstall Plugin
 
 ### 1. Rollback Database Migration
 
 ```bash
 cd /path/to/redmine
-rake redmine:plugins:migrate NAME=redmine_bell_notifications VERSION=0 RAILS_ENV=production
+bundle exec rake redmine:plugins NAME=redmine_bell_notifications VERSION=0 RAILS_ENV=production
 ```
 
 ### 2. Remove Plugin Directory
@@ -304,25 +419,51 @@ rake redmine:plugins:migrate NAME=redmine_bell_notifications VERSION=0 RAILS_ENV
 rm -rf plugins/redmine_bell_notifications
 ```
 
-### 3. Restart Redmine
-
-```bash
-touch tmp/restart.txt
-# or restart your application server
-```
+Restart Redmine
 
 ## Development
 
 ### Running Tests
 
+The plugin includes a test suite covering:
+
+- **Unit tests**: Models, notification builder, mailer patch
+- **Functional tests**: Controllers and API endpoints
+- **Integration tests**: Full request/response cycles
+
+**Run all tests:**
+
 ```bash
 cd /path/to/redmine
-rake redmine:plugins:test NAME=redmine_bell_notifications
+bundle exec rake redmine:plugins:test NAME=redmine_bell_notifications RAILS_ENV=test
 ```
+
+**Run specific test file:**
+
+```bash
+cd /path/to/redmine
+bundle exec rails test plugins/redmine_bell_notifications/test/unit/bell_notification_test.rb RAILS_ENV=test
+```
+
+**Run specific test:**
+
+```bash
+cd /path/to/redmine
+bundle exec rails test plugins/redmine_bell_notifications/test/unit/bell_notification_test.rb:10 RAILS_ENV=test
+```
+
+**Test coverage:**
+
+- Model validations and associations
+- Notification creation from emails
+- Controller actions and API responses
+- Permission handling
+- Mark as read functionality
+- Cleanup tasks
 
 ### File Structure
 
-```
+```shell
 redmine_bell_notifications/
 ├── init.rb                          # Plugin registration
 ├── app/
@@ -354,16 +495,12 @@ This plugin is licensed under the MIT License.
 
 For issues, feature requests, or questions:
 
-- GitHub Issues: <https://github.com/linways/redmine_bell_notifications/issues>
-- Email: <support@linways.com>
-
-## Credits
-
-Developed by [Linways](https://linways.com)
+- GitHub Issues: <https://github.com/Akshaychdev/redmine_bell_notifications/issues>
+- Email: <akshaych.dev@gmail.com>
 
 ## Changelog
 
-### Version 1.0.0 (2025-12-26)
+### Version 1.0.0 (2025-12-27)
 
 - Initial release
 - Bell icon with unread count badge
@@ -375,29 +512,6 @@ Developed by [Linways](https://linways.com)
 - Theme-compatible design
 - Mobile-responsive layout
 
-## Theme Compatibility
-
-The plugin is designed to seamlessly integrate with Redmine's theming system:
-
-### Design Philosophy
-
-- **Uses Redmine's native CSS classes** - The dropdown uses `.drdn-content` and `.drdn-items` classes
-- **Follows Redmine's color scheme** - Link colors (#169), hover states (#c61a1a), backgrounds (#f9fafb)
-- **Inherits theme fonts** - Uses `var(--fonts-main)` for consistent typography
-- **Matches Redmine's UI patterns** - Border colors, shadows, and spacing match Redmine's design
-
-### Tested Themes
-
-The plugin works with:
-- **Classic** (default Redmine theme)
-- **Alternate** (Redmine's alternate theme)
-- **PurpleMine** and other popular community themes
-- **Dark themes** (automatically inherits dark color schemes)
-
-### How It Works
-
-The plugin doesn't override theme styles - it inherits them. When you switch themes in Redmine, the bell notification dropdown automatically adapts to match the new theme's colors and styling.
-
 ## Roadmap
 
 Future enhancements may include:
@@ -408,5 +522,3 @@ Future enhancements may include:
 - Search and filtering
 - Sound/desktop notifications
 - Notification archiving
-- Export to CSV/JSON
-- Mobile app API
