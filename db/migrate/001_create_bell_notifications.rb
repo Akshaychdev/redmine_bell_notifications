@@ -1,5 +1,5 @@
 class CreateBellNotifications < ActiveRecord::Migration[6.1]
-  def change
+  def up
     create_table :bell_notifications do |t|
       t.integer :user_id, null: false
       t.integer :notifiable_id
@@ -13,9 +13,10 @@ class CreateBellNotifications < ActiveRecord::Migration[6.1]
       t.timestamps
     end
 
-    # Add foreign key manually with correct type
+    # Add foreign key (this automatically creates an index on user_id in MySQL)
     add_foreign_key :bell_notifications, :users
-    add_index :bell_notifications, :user_id
+
+    # Add other indexes
     add_index :bell_notifications, :read_at
 
     # Composite index for efficient unread queries
@@ -26,5 +27,13 @@ class CreateBellNotifications < ActiveRecord::Migration[6.1]
 
     # Index for cleanup queries
     add_index :bell_notifications, :created_at
+  end
+
+  def down
+    # Remove foreign key first, before dropping indexes
+    remove_foreign_key :bell_notifications, :users if foreign_key_exists?(:bell_notifications, :users)
+
+    # Now safe to drop the table (which drops all indexes)
+    drop_table :bell_notifications
   end
 end
