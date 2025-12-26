@@ -1,8 +1,8 @@
 namespace :redmine do
   namespace :bell_notifications do
-    desc 'Cleanup old bell notifications (older than 6 months by default)'
+    desc 'Cleanup old bell notifications (older than 30 days by default)'
     task cleanup: :environment do
-      days = ENV['DAYS']&.to_i || 180  # Default: 6 months (180 days)
+      days = ENV['DAYS']&.to_i || 30  # Default: 1 month (30 days)
 
       puts "Starting cleanup of bell notifications older than #{days} days..."
 
