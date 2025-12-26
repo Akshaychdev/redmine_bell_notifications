@@ -3,7 +3,7 @@
     <h4><%= l(:label_notifications) %></h4>
     <% if @unread_notifications.any? %>
       <%= link_to l(:label_mark_all_read),
-                  bell_notifications_mark_all_read_path,
+                  mark_all_read_notifications_path,
                   method: :put,
                   id: 'bell-mark-all-read',
                   remote: true %>

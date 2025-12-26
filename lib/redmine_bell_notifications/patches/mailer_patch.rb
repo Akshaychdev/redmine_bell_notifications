@@ -5,18 +5,27 @@ module RedmineBellNotifications
 
       module ClassMethods
         # Intercept mail delivery to create bell notifications
+        #
+        # @param mail [Mail::Message] The email message being delivered
+        # @return [Mail::Message] The delivered mail message
         def deliver_mail(mail)
           # Always create bell notifications, regardless of email delivery settings
           # This allows bell notifications to work independently of email configuration
           begin
-            Rails.logger.info "BellNotifications: deliver_mail called - Subject: #{mail.subject}, To: #{mail.to.inspect}"
+            RedmineBellNotifications::Logger.info(
+              "Mail delivery intercepted",
+              context: { subject: mail.subject, recipients: mail.to&.size || 0 }
+            )
             create_bell_notifications(mail)
 
             # Trigger automatic cleanup if due (runs in background, doesn't block)
             RedmineBellNotifications.auto_cleanup
           rescue => e
-            Rails.logger.error "BellNotifications: Error creating notifications: #{e.message}"
-            Rails.logger.error e.backtrace.join("\n")
+            RedmineBellNotifications::Logger.error(
+              "Failed to create bell notifications during mail delivery",
+              exception: e,
+              context: { subject: mail.subject }
+            )
           end
 
           # Continue with normal email delivery
@@ -26,27 +35,45 @@ module RedmineBellNotifications
 
         private
 
+        # Create bell notifications for all mail recipients
+        #
+        # @param mail [Mail::Message] The email message to process
+        # @return [void]
         def create_bell_notifications(mail)
           builder = NotificationBuilder.new(mail)
 
           # Process all recipients (to, cc, bcc)
           %i(to cc bcc).each do |field|
             receivers = Array(mail.send(field)).flatten.compact
-            Rails.logger.info "BellNotifications: #{field.upcase} recipients: #{receivers.inspect}"
+            RedmineBellNotifications::Logger.debug(
+              "Processing recipients",
+              context: { field: field, count: receivers.size }
+            )
 
             receivers.each do |addr|
               user = User.having_mail(addr).first
 
               if user.present?
                 should_create = should_create_bell_notification?(user)
-                Rails.logger.info "BellNotifications: User found: #{user.login} (#{addr}), should_create: #{should_create}"
+                RedmineBellNotifications::Logger.debug(
+                  "User found",
+                  context: { user_login: user.login, email: addr, will_create: should_create }
+                )
 
                 if should_create
                   notification = builder.create_notification_for(user)
-                  Rails.logger.info "BellNotifications: Notification created: #{notification.inspect}"
+                  if notification
+                    RedmineBellNotifications::Logger.debug(
+                      "Notification created",
+                      context: { notification_id: notification.id, user_id: user.id }
+                    )
+                  end
                 end
               else
-                Rails.logger.info "BellNotifications: No user found for email: #{addr}"
+                RedmineBellNotifications::Logger.debug(
+                  "No user found for email",
+                  context: { email: addr }
+                )
               end
             end
           end

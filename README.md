@@ -17,19 +17,11 @@ The plugin intercepts Redmine's email notification system and creates in-app bel
 
 > **⚠️ IMPORTANT: This plugin is entirely developed using AI tools including GitHub Copilot and Claude. Please review the code and test thoroughly before using in production.**
 
-<div style="display: flex; gap: 10px;">
-  <div style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
-    <img src="images/README/dsk_bell_icon.png" alt="Desktop Bell Icon" style="width: 100%;">
-    <img src="images/README/dsk_expanded.png" alt="Desktop Expanded" style="width: 100%;">
-  </div>
-  <div style="flex: 1;">
-    <img src="images/README/mobile_expanded.png" alt="Mobile Expanded" style="width: 100%; height: 100%; object-fit: cover;">
-  </div>
-</div>
+<img src="images/README/dsk_bell_icon.png" alt="Desktop Bell Icon" width="600px" height="auto">
+
+<img src="images/README/dsk_expanded.png" alt="Desktop Expanded" width="300px" height="auto"> <img src="images/README/mobile_expanded.png" alt="Mobile Expanded" width="300px" height="auto">
 
 ## Installation
-
-**IMPORTANT**: The plugin directory must be named exactly `redmine_bell_notifications` to match the plugin registration. Do not rename it.
 
 ### 1. Install the Plugin
 
@@ -38,7 +30,8 @@ cd /path/to/redmine/plugins
 git clone https://github.com/Akshaychdev/redmine_bell_notifications
 ```
 
-Or download and extract to `plugins/redmine_bell_notifications/`
+Or download and extract to `plugins/redmine_bell_notifications/`,
+The plugin directory must be named exactly `redmine_bell_notifications` to match the plugin registration. Do not rename it.
 
 ### 2. Run Database Migration
 

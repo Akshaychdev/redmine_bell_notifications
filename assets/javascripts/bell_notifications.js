@@ -1,12 +1,22 @@
 (function() {
   'use strict';
 
+  // Constants - Configuration values used throughout the module
+  var CONSTANTS = {
+    POLL_INTERVAL_MS: 60000,          // Default polling interval (1 minute)
+    RESIZE_DEBOUNCE_MS: 250,          // Window resize debounce delay
+    MAX_POLLING_FAILURES: 3,          // Stop polling after this many consecutive failures
+    POLLING_RETRY_DELAY_MS: 300000,   // Retry delay after max failures (5 minutes)
+    MAX_BADGE_DISPLAY_COUNT: 99,      // Maximum count to show in badge (shows "99+" if more)
+    MARK_ALL_FEEDBACK_DURATION_MS: 1500 // Duration to show "Done!" feedback
+  };
+
   var BellNotifications = {
-    pollInterval: 60000, // Poll every 60 seconds
+    pollInterval: CONSTANTS.POLL_INTERVAL_MS,
     pollingIntervalId: null, // Store interval ID to prevent memory leaks
     dropdownOpen: false,
     failureCount: 0, // Track consecutive failures
-    maxFailures: 3, // Stop polling after this many failures
+    maxFailures: CONSTANTS.MAX_POLLING_FAILURES,
     backoffMultiplier: 1, // Exponential backoff multiplier
     resizeListenerAdded: false, // Flag to prevent duplicate resize listeners
 
@@ -80,7 +90,7 @@
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function() {
           self.positionBellIcon();
-        }, 250);
+        }, CONSTANTS.RESIZE_DEBOUNCE_MS);
       });
 
       this.resizeListenerAdded = true;
@@ -89,7 +99,7 @@
     updateUnreadCount: function() {
       var self = this;
 
-      fetch('/bell_notifications/unread_count', {
+      fetch('/bell/notifications/unread_count', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -121,13 +131,13 @@
         console.error('BellNotifications: Too many consecutive failures (' + this.failureCount + '), stopping polling');
         this.stopPolling();
 
-        // Retry after a longer delay (5 minutes)
+        // Retry after a longer delay
         var self = this;
         setTimeout(function() {
           self.failureCount = 0;
           self.backoffMultiplier = 1;
           self.startPolling();
-        }, 300000); // 5 minutes
+        }, CONSTANTS.POLLING_RETRY_DELAY_MS);
       } else {
         // Exponential backoff
         this.backoffMultiplier = Math.pow(2, this.failureCount - 1);
@@ -147,7 +157,9 @@
         menu.appendChild(badge);
       }
 
-      badge.textContent = count > 99 ? '99+' : count.toString();
+      badge.textContent = count > CONSTANTS.MAX_BADGE_DISPLAY_COUNT
+        ? CONSTANTS.MAX_BADGE_DISPLAY_COUNT + '+'
+        : count.toString();
       badge.style.display = 'inline-block';
 
       // Optional: dim the badge when count is 0
@@ -247,7 +259,7 @@
       }
 
       // Mark as read without navigation
-      fetch('/bell_notifications/' + notificationId + '/mark_read', {
+      fetch('/bell/notifications/' + notificationId + '/mark_read', {
         method: 'PUT',
         headers: {
           'Accept': 'application/json',
@@ -284,7 +296,7 @@
       }
 
       // Mark as read
-      fetch('/bell_notifications/' + notificationId + '/mark_read', {
+      fetch('/bell/notifications/' + notificationId + '/mark_read', {
         method: 'PUT',
         headers: {
           'Accept': 'application/json',
@@ -322,7 +334,7 @@
       button.style.opacity = '0.6';
       button.style.pointerEvents = 'none';
 
-      fetch('/bell_notifications/mark_all_read', {
+      fetch('/bell/notifications/mark_all_read', {
         method: 'PUT',
         headers: {
           'Accept': 'application/json',
@@ -353,13 +365,13 @@
 
           self.updateUnreadCount();
 
-          // Reset button after 1.5 seconds
+          // Reset button after feedback duration
           setTimeout(function() {
             button.textContent = originalText;
             button.style.backgroundColor = '';
             button.style.color = '';
             button.style.pointerEvents = '';
-          }, 1500);
+          }, CONSTANTS.MARK_ALL_FEEDBACK_DURATION_MS);
         }
       })
       .catch(function(error) {
@@ -469,7 +481,7 @@
     openDropdown: function() {
       var self = this;
 
-      fetch('/bell_notifications/dropdown', {
+      fetch('/bell/notifications/dropdown', {
         method: 'GET',
         headers: {
           'X-Requested-With': 'XMLHttpRequest'
