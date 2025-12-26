@@ -72,7 +72,7 @@ class BellNotificationsIntegrationTest < Redmine::IntegrationTest
       )
     end
 
-    get '/bell_notifications/dropdown.js', xhr: true
+    get '/bell/notifications/dropdown.js', xhr: true
     assert_response :success
 
     # Verify notifications are loaded correctly

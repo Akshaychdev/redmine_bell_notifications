@@ -1,7 +1,30 @@
 module RedmineBellNotifications
+  # Notification Builder - Extracts notification data from email messages
+  #
+  # This class is responsible for parsing Redmine email notifications and
+  # extracting relevant data to create bell notifications. It analyzes email
+  # headers, subject, and body to determine the notifiable object, actor,
+  # event type, and other metadata.
+  #
+  # @example Create notifications from an email
+  #   builder = NotificationBuilder.new(mail)
+  #   notification = builder.create_notification_for(user)
+  #
+  # @attr_reader [Mail::Message] mail The email message being processed
+  # @attr_reader [String] title Extracted notification title from subject
+  # @attr_reader [String] body Extracted preview text from email body
+  # @attr_reader [ActiveRecord::Base] notifiable The related object (Issue, Journal, etc.)
+  # @attr_reader [String] event_type The type of event that triggered the notification
+  # @attr_reader [User] actor The user who triggered the event
+  # @attr_reader [String] url The URL to the notifiable object
   class NotificationBuilder
     attr_reader :mail, :title, :body, :notifiable, :event_type, :actor, :url
 
+    # Initialize a new NotificationBuilder
+    #
+    # Immediately extracts all data from the email upon initialization.
+    #
+    # @param mail [Mail::Message] The email message to process
     def initialize(mail)
       @mail = mail
       @title = extract_title
@@ -13,9 +36,12 @@ module RedmineBellNotifications
     end
 
     # Create a bell notification for a specific user
+    #
+    # @param user [User] The user to create the notification for
+    # @return [BellNotification, nil] The created notification, or nil on error
     def create_notification_for(user)
       # Generate URL during creation to avoid N+1 queries later
-      generated_url = @url.presence || generate_url_for_notifiable
+      generated_url = @url.presence || UrlGenerator.generate_for(@notifiable)
 
       BellNotification.create!(
         user: user,
@@ -27,19 +53,29 @@ module RedmineBellNotifications
         url: generated_url
       )
     rescue => e
-      Rails.logger.error "BellNotifications: Failed to create notification for user #{user.id}: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
+      RedmineBellNotifications::Logger.error(
+        "Failed to create notification",
+        exception: e,
+        context: { user_id: user.id, event_type: @event_type }
+      )
       nil
     end
 
     private
 
-    # Extract email subject as title
+    # Extract email subject as notification title
+    #
+    # @return [String] The email subject line, stripped of whitespace
     def extract_title
       @mail.subject.to_s.strip
     end
 
-    # Extract email body preview (first 500 chars)
+    # Extract email body preview text
+    #
+    # Extracts the first 500 characters from the email body, handling both
+    # plain text and multipart emails. Removes Redmine's email footer.
+    #
+    # @return [String] Preview text (max 500 chars), or empty string on error
     def extract_body
       text = if @mail.multipart?
                @mail.text_part&.body&.decoded || @mail.html_part&.body&.decoded || ''
@@ -49,13 +85,22 @@ module RedmineBellNotifications
 
       # Strip Redmine email header if present
       text = text.gsub(/^-- ?\n.*\z/m, '') if text
-      text.to_s.strip[0...500]
+      text.to_s.strip[0...Constants::MAX_BODY_LENGTH]
     rescue => e
-      Rails.logger.error "BellNotifications: Failed to extract body: #{e.message}"
+      RedmineBellNotifications::Logger.error(
+        "Failed to extract email body",
+        exception: e
+      )
       ''
     end
 
-    # Extract notifiable object from mail headers or subject
+    # Extract the notifiable object from email headers
+    #
+    # Attempts to identify the object this notification is about by checking
+    # Redmine's custom email headers (X-Redmine-Issue-Id, etc.) or parsing
+    # the subject line as a fallback.
+    #
+    # @return [ActiveRecord::Base, nil] The notifiable object, or nil if not found
     def extract_notifiable
       # Try to extract from Redmine custom headers first
       if issue_id = extract_header('X-Redmine-Issue-Id')
@@ -85,11 +130,19 @@ module RedmineBellNotifications
       # Fallback: try to parse from subject line
       parse_notifiable_from_subject
     rescue => e
-      Rails.logger.error "BellNotifications: Failed to extract notifiable: #{e.message}"
+      RedmineBellNotifications::Logger.error(
+        "Failed to extract notifiable from mail",
+        exception: e
+      )
       nil
     end
 
-    # Parse subject line to find issue/news/wiki references
+    # Parse the subject line to find object references
+    #
+    # Fallback method when headers don't contain notifiable information.
+    # Currently only supports issue references (e.g., "#123").
+    #
+    # @return [Issue, nil] The issue if found, nil otherwise
     def parse_notifiable_from_subject
       subject = @title
 
@@ -101,12 +154,21 @@ module RedmineBellNotifications
       end
     end
 
-    # Extract event type from headers or infer from context
+    # Extract or infer the event type
+    #
+    # First checks for X-Redmine-Event header, then infers from notifiable state.
+    #
+    # @return [String] Event type (e.g., 'issue_added', 'issue_updated')
     def extract_event_type
       extract_header('X-Redmine-Event') || infer_event_type
     end
 
-    # Infer event type from notifiable state instead of brittle string matching
+    # Infer event type from the notifiable object's state
+    #
+    # Uses object timestamps and properties to determine if it was just created
+    # or is being updated. More reliable than parsing subject lines.
+    #
+    # @return [String] Inferred event type, or 'unknown' if cannot determine
     def infer_event_type
       return 'unknown' unless @notifiable
 
@@ -114,7 +176,7 @@ module RedmineBellNotifications
       when Issue
         # Check if issue was just created by comparing timestamps
         if @notifiable.created_on && @notifiable.updated_on &&
-           (@notifiable.updated_on - @notifiable.created_on).abs < 5 # Within 5 seconds
+           (@notifiable.updated_on - @notifiable.created_on).abs < Constants::ISSUE_CREATION_THRESHOLD_SECONDS
           'issue_added'
         else
           'issue_updated'
@@ -139,7 +201,14 @@ module RedmineBellNotifications
       end
     end
 
-    # Extract actor (user who triggered the event)
+    # Extract the actor (user who triggered the event)
+    #
+    # Attempts to identify the user who caused this notification by checking:
+    # 1. X-Redmine-Sender header
+    # 2. Notifiable object's author or last editor
+    # 3. Current user as fallback
+    #
+    # @return [User, nil] The actor user, or nil if cannot be determined
     def extract_actor
       # Priority 1: Extract from X-Redmine-Sender header (contains login, not ID)
       if sender_login = extract_header('X-Redmine-Sender')
@@ -179,70 +248,35 @@ module RedmineBellNotifications
       # Priority 3: Fallback to current user (may be Anonymous in mail context)
       User.current.presence
     rescue => e
-      Rails.logger.error "BellNotifications: Failed to extract actor: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
+      RedmineBellNotifications::Logger.error(
+        "Failed to extract actor from mail",
+        exception: e
+      )
       nil
     end
 
     # Extract URL from mail or generate from notifiable
+    # Currently returns nil to let UrlGenerator handle it during creation
+    #
+    # @return [nil] Always returns nil; URL generation delegated to UrlGenerator
     def extract_url
       # Could extract from email body if needed
-      # For now, let the model generate it
+      # For now, delegate to UrlGenerator during notification creation
       nil
     end
 
-    # Generate URL for notifiable object (called during creation to avoid N+1)
-    def generate_url_for_notifiable
-      return nil unless @notifiable
-
-      begin
-        case @notifiable
-        when Issue
-          Rails.application.routes.url_helpers.issue_path(@notifiable)
-        when Journal
-          issue = @notifiable.journalized
-          Rails.application.routes.url_helpers.issue_path(
-            issue,
-            anchor: "change-#{@notifiable.id}"
-          )
-        when News
-          Rails.application.routes.url_helpers.news_path(@notifiable)
-        when WikiContent
-          Rails.application.routes.url_helpers.project_wiki_page_path(
-            @notifiable.page.wiki.project,
-            @notifiable.page.title
-          )
-        when Message
-          board = @notifiable.board
-          Rails.application.routes.url_helpers.board_message_path(
-            board,
-            @notifiable
-          )
-        when Document
-          Rails.application.routes.url_helpers.document_path(@notifiable)
-        when Comment
-          # Comments are polymorphic, link to the commented object
-          case @notifiable.commented
-          when News
-            Rails.application.routes.url_helpers.news_path(@notifiable.commented)
-          else
-            nil
-          end
-        else
-          nil
-        end
-      rescue => e
-        Rails.logger.error "BellNotifications: Failed to generate URL for #{@notifiable.class}: #{e.message}"
-        nil
-      end
-    end
-
     # Helper to extract header value safely
+    #
+    # @param name [String] The header name to extract
+    # @return [String, nil] The header value, or nil if not found
     def extract_header(name)
       header = @mail.header[name]
       header&.value
     rescue => e
-      Rails.logger.debug "BellNotifications: Header #{name} not found: #{e.message}"
+      RedmineBellNotifications::Logger.debug(
+        "Header not found",
+        context: { header: name, error: e.message }
+      )
       nil
     end
   end

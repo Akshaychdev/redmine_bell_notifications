@@ -1,0 +1,77 @@
+# Ruby / Rails
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+
+# Bundler
+/.bundle/
+/vendor/bundle
+/lib/bundler/man/
+
+# RDoc documentation
+/.yardoc/
+/_yardoc/
+/doc/
+/rdoc/
+
+# Environment variables
+/.env
+/.env.*
+!/.env.example
+
+# IDE and Editor files
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+log/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.orig
+
+# OS files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Compiled assets (if using asset pipeline)
+/public/assets/
+
+# Test coverage
+/coverage/
+
+# Ignore master key for decrypting credentials
+/config/master.key
+
+# Ignore AI-generated documentation artifacts
+CLAUDE.md
+to_do_list.md
